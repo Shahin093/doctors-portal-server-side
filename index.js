@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, BSONRegExp } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -28,47 +28,29 @@ async function run() {
             res.send(service);
         });
 
+
+        // warning
+        // THis is not the Proper way to query . 
+        // After Learning about mongodb . use aggregate lookup , pipeline , match, group 
         app.get('/available', async (req, res) => {
-
-
-            // const date = req.query.date || 'May 14, 2022';
-            // const services = await serviceCollection.find().toArray();
-
-            // const query = { date: date };
-            // const bookings = await bookingCollection.find(query).toArray();
-
-            // services.forEach(service => {
-            //     const serviceBooking = bookings.filter(b => b.treatmentName === service.name);
-            //     const booked = serviceBooking.map(s => s.slot);
-            //     const available = service.slots.filter(s => !booked(s));
-            //     service.available = available;
-
-            // })
-
-            // res.send(services);
-
-
-
-            const date = req.query.date || 'May 14, 2022';
+            const date = req.query.date || '';
             // step1. get all services
             const services = await serviceCollection.find().toArray();
-            // steps2 . get the booking of that day 
+            // steps2 . get the booking of that day. Output structure: [{}, {}, {}, {},{}, {}, {}]
             const query = { date: date };
             const bookings = await bookingCollection.find(query).toArray();
 
             // sets3 . for each service , find bookings for that serive
             services.forEach(service => {
-                const serviceBooking = bookings.filter(b => b.treatmentName === service.name);
-                const booked = serviceBooking.map(s => s.slot);
-                const available = service.slots.filter(s => !booked.includes(s));
-                service.available = available;
+                const serviceBooking = bookings.filter(book => book.treatmentName === service.name);
+                // steps 5 selected slots for the service bookings ['','','','','']
+                const booked = serviceBooking.map(book => book.slot);
+                //steps 6 select those slots that are not in boookedSlots
+                const available = service.slots.filter(slot => !booked.includes(slot));
+                //steps 7: set avaiable to slots to make it easier.
+                service.slots = available;
             })
             res.send(services);
-
-
-
-
-
         })
 
 
